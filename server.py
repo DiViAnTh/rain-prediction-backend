@@ -2,14 +2,15 @@ import os
 import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from datetime import datetime  # Import datetime for manual timestamping
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests
+CORS(app)
 
-# 🔹 Load database credentials securely
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a/rain_db_5lru")
+# Load database credentials securely
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a.oregon-postgres.render.com/rain_db_5lru")
 
-# 🔹 Function to get a new database connection
+# Function to get a new database connection
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
     return conn
@@ -27,6 +28,7 @@ def upload():
         ax = data.get("ax")
         ay = data.get("ay")
         az = data.get("az")
+        timestamp = datetime.now()  # Get current timestamp
 
         # Open a new database connection
         conn = get_db_connection()
@@ -34,8 +36,8 @@ def upload():
 
         # Insert data into the database
         cur.execute(
-            "INSERT INTO sensor_data (temperature, humidity, ax, ay, az) VALUES (%s, %s, %s, %s, %s)",
-            (temperature, humidity, ax, ay, az)
+            "INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp) VALUES (%s, %s, %s, %s, %s, %s)",
+            (temperature, humidity, ax, ay, az, timestamp)
         )
         conn.commit()
         cur.close()
@@ -66,7 +68,7 @@ def get_data():
                 "ax": row[3],
                 "ay": row[4],
                 "az": row[5],
-                "timestamp": row[6]
+                "timestamp": row[6].isoformat()  # Convert timestamp to string
             })
 
         return jsonify(data)
