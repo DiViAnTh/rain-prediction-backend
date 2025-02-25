@@ -4,25 +4,20 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allows cross-origin requests
+CORS(app)  # Allow cross-origin requests
 
-# 🔹 Load database credentials from Render environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://your_user:your_password@your-db-host:5432/your_database")
+# 🔹 Load database credentials securely
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a/rain_db_5lru")
 
-# 🔹 Connect to PostgreSQL database
-try:
+# 🔹 Function to get a new database connection
+def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-    cur = conn.cursor()
-    print("✅ Database connection successful!")
-except Exception as e:
-    print("❌ Database connection failed!", e)
+    return conn
 
-# 🔹 API Root (Check if API is running)
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Flask API is running!"})
 
-# 🔹 Upload Sensor Data
 @app.route("/upload", methods=["POST"])
 def upload():
     try:
@@ -33,25 +28,35 @@ def upload():
         ay = data.get("ay")
         az = data.get("az")
 
+        # Open a new database connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+
         # Insert data into the database
         cur.execute(
             "INSERT INTO sensor_data (temperature, humidity, ax, ay, az) VALUES (%s, %s, %s, %s, %s)",
             (temperature, humidity, ax, ay, az)
         )
         conn.commit()
+        cur.close()
+        conn.close()
 
         return jsonify({"message": "Data saved"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# 🔹 Retrieve Recent Sensor Data
 @app.route("/data", methods=["GET"])
 def get_data():
     try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
         cur.execute("SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
+        cur.close()
+        conn.close()
 
-        # Convert rows into a JSON-friendly format
+        # Convert rows into JSON
         data = []
         for row in rows:
             data.append({
@@ -68,12 +73,5 @@ def get_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# 🔹 Close database connection when the app stops
-@app.teardown_appcontext
-def close_connection(exception):
-    cur.close()
-    conn.close()
-
-# 🔹 Run Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
