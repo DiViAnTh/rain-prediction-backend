@@ -1,16 +1,12 @@
-from flask import Flask, request, jsonify
 import psycopg2
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# PostgreSQL Connection
-conn = psycopg2.connect(
-    dbname="rain_db",
-    user="your_user",
-    password="your_password",
-    host="your-db-host",
-    port="5432"
-)
+# Replace with your Render database credentials
+DATABASE_URL = "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a/rain_db_5lru"
+
+conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
 @app.route("/upload", methods=["POST"])
