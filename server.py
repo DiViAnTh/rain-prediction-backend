@@ -1,25 +1,22 @@
-import os
 import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime  # Import datetime for manual timestamping
 
 app = Flask(__name__)
 CORS(app)
 
-# Load database credentials
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Directly use database credentials (without environment variables)
+DATABASE_URL = "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a.oregon-postgres.render.com/rain_db"
 
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set. Make sure it's configured in Render.")
-
+# Function to establish a database connection
 def get_db_connection():
-    try:
-        conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-        return conn
-    except psycopg2.Error as e:
-        print(f"Database connection error: {e}")
-        return None
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    return conn
+
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "Flask API is running!"})
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -27,21 +24,18 @@ def upload():
         data = request.json
         temperature = data.get("temperature")
         humidity = data.get("humidity")
-        pressure = data.get("pressure")  # ✅ New
-        altitude = data.get("altitude")  # ✅ New
+        pressure = data.get("pressure")  # New field for BME280
+        altitude = data.get("altitude")  # New field for BME280
         ax = data.get("ax")
         ay = data.get("ay")
         az = data.get("az")
-        timestamp = datetime.now()
+        timestamp = datetime.now()  # Get current timestamp
 
-        if None in (temperature, humidity, pressure, altitude, ax, ay, az):
-            return jsonify({"error": "Missing data fields"}), 400
-
+        # Open a new database connection
         conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
-        
         cur = conn.cursor()
+
+        # Insert data into the database
         cur.execute(
             "INSERT INTO sensor_data (temperature, humidity, pressure, altitude, ax, ay, az, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
             (temperature, humidity, pressure, altitude, ax, ay, az, timestamp)
@@ -50,7 +44,7 @@ def upload():
         cur.close()
         conn.close()
 
-        return jsonify({"message": "Data saved successfully"}), 201
+        return jsonify({"message": "Data saved"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -58,29 +52,27 @@ def upload():
 def get_data():
     try:
         conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
-        
         cur = conn.cursor()
+
         cur.execute("SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
-        data = [
-            {
+        # Convert rows into JSON
+        data = []
+        for row in rows:
+            data.append({
                 "id": row[0],
                 "temperature": row[1],
                 "humidity": row[2],
-                "pressure": row[3],  # ✅ Updated
-                "altitude": row[4],  # ✅ Updated
+                "pressure": row[3],  # New field for BME280
+                "altitude": row[4],  # New field for BME280
                 "ax": row[5],
                 "ay": row[6],
                 "az": row[7],
-                "timestamp": row[8].isoformat(),
-            }
-            for row in rows
-        ]
+                "timestamp": row[8].isoformat()  # Convert timestamp to string
+            })
 
         return jsonify(data)
     except Exception as e:
