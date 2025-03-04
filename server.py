@@ -23,12 +23,9 @@ def upload():
         data = request.json
         temperature = data.get("temperature")
         humidity = data.get("humidity")
-        pressure = data.get("pressure")  # ✅ BME280 pressure
-        altitude = data.get("altitude")  # ✅ BME280 altitude
-        ax = data.get("ax")
-        ay = data.get("ay")
-        az = data.get("az")
-        timestamp = datetime.now()  # ✅ Ensures timestamp is always present
+        pressure = data.get("pressure")  
+        altitude = data.get("altitude")  
+        timestamp = datetime.now()  
 
         # Open database connection
         conn = get_db_connection()
@@ -36,8 +33,8 @@ def upload():
 
         # Insert data into sensor_data table
         cur.execute(
-            "INSERT INTO sensor_data (temperature, humidity, pressure, altitude, ax, ay, az, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (temperature, humidity, pressure, altitude, ax, ay, az, timestamp)
+            "INSERT INTO sensor_data (temperature, humidity, pressure, altitude, timestamp) VALUES (%s, %s, %s, %s, %s)",
+            (temperature, humidity, pressure, altitude, timestamp)
         )
         conn.commit()
         cur.close()
@@ -66,12 +63,9 @@ def get_data():
                 "id": row[0],
                 "temperature": row[1],
                 "humidity": row[2],
-                "pressure": row[3],  # ✅ BME280 pressure
-                "altitude": row[4],  # ✅ BME280 altitude
-                "ax": row[5],
-                "ay": row[6],
-                "az": row[7],
-                "timestamp": row[8].isoformat() if row[8] else None  # ✅ Handles NULL timestamps
+                "pressure": row[3],  
+                "altitude": row[4],  
+                "timestamp": row[5].isoformat() if row[5] else None  
             })
 
         return jsonify(data)
