@@ -1,12 +1,12 @@
 import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime  # Import datetime for timestamp handling
+from datetime import datetime  
 
 app = Flask(__name__)
 CORS(app)
 
-# Directly using database credentials
+# Database credentials
 DATABASE_URL = "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a.oregon-postgres.render.com/rain_db_5lru"
 
 # Function to get a database connection
@@ -25,7 +25,7 @@ def upload():
         humidity = data.get("humidity")
         pressure = data.get("pressure")  
         altitude = data.get("altitude")  
-        timestamp = datetime.now()  
+        timestamp = datetime.now()  # Ensures timestamp is always set
 
         # Open database connection
         conn = get_db_connection()
@@ -51,7 +51,7 @@ def get_data():
         cur = conn.cursor()
 
         # Fetch latest 10 sensor readings
-        cur.execute("SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 10")
+        cur.execute("SELECT id, temperature, humidity, pressure, altitude, timestamp FROM sensor_data ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
         cur.close()
         conn.close()
