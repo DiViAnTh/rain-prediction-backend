@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Directly use database credentials (without environment variables)
-DATABASE_URL = "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a.oregon-postgres.render.com/rain_db"
+DATABASE_URL = "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a.oregon-postgres.render.com/rain_db_5lru"
 
 # Function to establish a database connection
 def get_db_connection():
