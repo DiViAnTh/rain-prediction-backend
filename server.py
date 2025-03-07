@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Database Credentials (Directly used)
+# ✅ Database Credentials
 DATABASE_URL = "postgresql://rain_db_5lru_user:TegwXbOymxvPsTx3Qo35X7MarOcFZvYM@dpg-cuutpt9opnds73ekk550-a.oregon-postgres.render.com/rain_db_5lru"
 
 # ✅ Function to Get Database Connection
@@ -18,12 +18,12 @@ def home():
     return jsonify({
         "message": "📡 IoT Weather Analytics API is Running!",
         "endpoints": {
-            "/upload": "POST sensor data for Node 1",
-            "/upload2": "POST sensor data for Node 2",
-            "/data": "GET latest 10 sensor records",
-            "/data2": "GET latest 10 records from Node 2",
-            "/latest_data": "GET most recent sensor reading from Node 1",
-            "/latest_data2": "GET most recent reading from Node 2",
+            "/upload": "POST Node 1 sensor data",
+            "/upload2": "POST Node 2 sensor data",
+            "/data": "GET latest 10 sensor records (Node 1)",
+            "/data2": "GET latest 10 sensor records (Node 2)",
+            "/latest_data": "GET most recent sensor reading (Node 1)",
+            "/latest_data2": "GET most recent sensor reading (Node 2)",
             "/daily_summary": "GET daily avg & peak temperature/humidity (Node 1)",
             "/daily_summary2": "GET daily avg & peak temperature/humidity (Node 2)",
             "/last_7_days": "GET analytics for the last 7 days (Node 1)",
@@ -31,7 +31,7 @@ def home():
         }
     })
 
-# ✅ **1️⃣ Upload Sensor Data for Node 1**
+# ✅ **1️⃣ Upload Sensor Data (Node 1)**
 @app.route("/upload", methods=["POST"])
 def upload():
     try:
@@ -55,11 +55,11 @@ def upload():
         cur.close()
         conn.close()
 
-        return jsonify({"status": "✅ Data saved successfully (Node 1)"}), 201
+        return jsonify({"status": "✅ Node 1 data saved successfully"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ **2️⃣ Upload Sensor Data for Node 2**
+# ✅ **2️⃣ Upload Sensor Data (Node 2)**
 @app.route("/upload2", methods=["POST"])
 def upload2():
     try:
@@ -83,125 +83,109 @@ def upload2():
         cur.close()
         conn.close()
 
-        return jsonify({"status": "✅ Data saved successfully (Node 2)"}), 201
+        return jsonify({"status": "✅ Node 2 data saved successfully"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ **3️⃣ Get Latest 10 Records from Node 1**
+# ✅ **3️⃣ Get Latest 10 Records (Node 1)**
 @app.route("/data", methods=["GET"])
 def get_data():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute("""
-            SELECT id, temperature, humidity, ax, ay, az, timestamp
-            FROM sensor_data ORDER BY timestamp DESC LIMIT 10
-        """)
+        cur.execute("SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
         data = [{
             "id": row[0], "temperature": row[1], "humidity": row[2],
-            "ax": row[3], "ay": row[4], "az": row[5],
-            "timestamp": row[6].isoformat()
+            "ax": row[3], "ay": row[4], "az": row[5], 
+            "timestamp": row[6].isoformat() if row[6] else None
         } for row in rows]
 
-        return jsonify({"latest_readings_node_1": data})
+        return jsonify({"latest_readings_node1": data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ **4️⃣ Get Latest 10 Records from Node 2**
+# ✅ **4️⃣ Get Latest 10 Records (Node 2)**
 @app.route("/data2", methods=["GET"])
 def get_data2():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute("""
-            SELECT id, temperature, humidity, ax, ay, az, timestamp
-            FROM sensor_data2 ORDER BY timestamp DESC LIMIT 10
-        """)
+        cur.execute("SELECT * FROM sensor_data2 ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
         data = [{
             "id": row[0], "temperature": row[1], "humidity": row[2],
-            "ax": row[3], "ay": row[4], "az": row[5],
-            "timestamp": row[6].isoformat()
+            "ax": row[3], "ay": row[4], "az": row[5], 
+            "timestamp": row[6].isoformat() if row[6] else None
         } for row in rows]
 
-        return jsonify({"latest_readings_node_2": data})
+        return jsonify({"latest_readings_node2": data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ **5️⃣ Get Last 7 Days Analytics for Node 1**
-@app.route("/last_7_days", methods=["GET"])
-def last_7_days():
+# ✅ **5️⃣ Get Daily Summary (Node 1)**
+@app.route("/daily_summary", methods=["GET"])
+def daily_summary():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT DATE(timestamp) AS date,
-                   ROUND(AVG(temperature)::numeric, 2) AS avg_temp,
-                   MAX(temperature) AS peak_temp,
-                   MIN(temperature) AS min_temp,
-                   ROUND(AVG(humidity)::numeric, 2) AS avg_humidity,
-                   MAX(humidity) AS peak_humidity,
-                   MIN(humidity) AS min_humidity
+            SELECT DATE(timestamp), ROUND(AVG(temperature)::numeric, 2), MAX(temperature), MIN(temperature), 
+                   ROUND(AVG(humidity)::numeric, 2), MAX(humidity), MIN(humidity)
             FROM sensor_data
-            WHERE timestamp >= NOW() - INTERVAL '7 days'
             GROUP BY DATE(timestamp)
-            ORDER BY date DESC;
+            ORDER BY DATE(timestamp) DESC
+            LIMIT 10;
         """)
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
-        analytics = [{
+        summary = [{
             "date": str(row[0]), "avg_temperature": row[1], "peak_temperature": row[2],
             "min_temperature": row[3], "avg_humidity": row[4],
             "peak_humidity": row[5], "min_humidity": row[6]
         } for row in rows]
 
-        return jsonify({"last_7_days_analytics_node_1": analytics})
+        return jsonify({"daily_summary_node1": summary})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ **6️⃣ Get Last 7 Days Analytics for Node 2**
-@app.route("/last_7_days2", methods=["GET"])
-def last_7_days2():
+# ✅ **6️⃣ Get Daily Summary (Node 2)**
+@app.route("/daily_summary2", methods=["GET"])
+def daily_summary2():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT DATE(timestamp) AS date,
-                   ROUND(AVG(temperature)::numeric, 2) AS avg_temp,
-                   MAX(temperature) AS peak_temp,
-                   MIN(temperature) AS min_temp,
-                   ROUND(AVG(humidity)::numeric, 2) AS avg_humidity,
-                   MAX(humidity) AS peak_humidity,
-                   MIN(humidity) AS min_humidity
+            SELECT DATE(timestamp), ROUND(AVG(temperature)::numeric, 2), MAX(temperature), MIN(temperature), 
+                   ROUND(AVG(humidity)::numeric, 2), MAX(humidity), MIN(humidity)
             FROM sensor_data2
-            WHERE timestamp >= NOW() - INTERVAL '7 days'
             GROUP BY DATE(timestamp)
-            ORDER BY date DESC;
+            ORDER BY DATE(timestamp) DESC
+            LIMIT 10;
         """)
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
-        analytics = [{
+        summary = [{
             "date": str(row[0]), "avg_temperature": row[1], "peak_temperature": row[2],
             "min_temperature": row[3], "avg_humidity": row[4],
             "peak_humidity": row[5], "min_humidity": row[6]
         } for row in rows]
 
-        return jsonify({"last_7_days_analytics_node_2": analytics})
+        return jsonify({"daily_summary_node2": summary})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
