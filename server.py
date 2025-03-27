@@ -41,74 +41,63 @@ def predict_anomaly_node1(features):
 def predict_anomaly_node2(features):
     return iso_forest_model_2.predict([features])[0] == -1
 
-# ✅ Predict Future Temperature using LSTM
+# 🚀 Min-Max scaling ranges (predefined for efficiency)
+SCALING_PARAMS = {
+    "temperature": (0, 50),  # Assuming temp ranges from 0 to 50°C
+    "humidity": (0, 100),     # Humidity is in %
+    "ax": (-2, 2),           # Accelerometer X range
+    "ay": (-2, 2),           # Accelerometer Y range
+    "az": (-2, 2)            # Accelerometer Z range
+}
+
+def scale_input(data):
+    """ Normalize input data using predefined min-max values """
+    return np.array([
+        (data[i] - SCALING_PARAMS[key][0]) / (SCALING_PARAMS[key][1] - SCALING_PARAMS[key][0])
+        for i, key in enumerate(SCALING_PARAMS)
+    ])
+
+def inverse_scale_temp(temp):
+    """ Convert the predicted temperature back to original scale """
+    min_t, max_t = SCALING_PARAMS["temperature"]
+    return temp * (max_t - min_t) + min_t
+
+def predict_temperature(table_name, model):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Fetch last 10 readings (temperature, humidity, ax, ay, az)
+        cur.execute(f"SELECT temperature, humidity, ax, ay, az FROM {table_name} ORDER BY timestamp DESC LIMIT 10")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if len(rows) < 10:
+            return jsonify({"error": "Not enough data for prediction"}), 400
+
+        # 🚀 Scale input data using predefined min-max ranges
+        scaled_data = np.array([scale_input(row) for row in rows])
+
+        # Reshape for LSTM model (batch_size=1, time_steps=10, features=5)
+        scaled_data = np.expand_dims(scaled_data, axis=0)
+
+        # 🔥 Predict temperature
+        predicted_temp = model.predict(scaled_data)[0][0]
+        predicted_temp = inverse_scale_temp(predicted_temp)
+
+        return jsonify({"predicted_temperature": float(predicted_temp)})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/predict_temperature", methods=["GET"])
-def predict_temperature():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+def predict_temp_1():
+    return predict_temperature("sensor_data", lstm_model_1)
 
-        # 🔹 Fetch last 10 sensor readings (temperature, humidity, ax, ay, az)
-        cur.execute("SELECT temperature, humidity, ax, ay, az FROM sensor_data ORDER BY timestamp DESC LIMIT 10")
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-
-        if len(rows) < 10:
-            return jsonify({"error": "Not enough data for prediction"}), 400
-
-        # 🔹 Prepare Data for LSTM
-        scaler = MinMaxScaler()
-        sensor_data = np.array(rows)  # Shape: (10, 5)
-
-        # Fit and transform sensor data
-        sensor_data = scaler.fit_transform(sensor_data)
-
-        # Reshape to LSTM format (batch_size=1, time_steps=10, features=5)
-        sensor_data = np.expand_dims(sensor_data, axis=0)  # Shape: (1, 10, 5)
-
-        # 🔹 Make prediction
-        predicted_temp = lstm_model_1.predict(sensor_data)  # Shape: (1, 1)
-        predicted_temp = scaler.inverse_transform(np.array([[predicted_temp[0][0], 0, 0, 0, 0]]))[:, 0][0]
-
-        return jsonify({"predicted_temperature": float(predicted_temp)})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
 @app.route("/predict_temperature2", methods=["GET"])
-def predict_temperature2():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        # 🔹 Fetch last 10 sensor readings (temperature, humidity, ax, ay, az)
-        cur.execute("SELECT temperature, humidity, ax, ay, az FROM sensor_data2 ORDER BY timestamp DESC LIMIT 10")
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-
-        if len(rows) < 10:
-            return jsonify({"error": "Not enough data for prediction"}), 400
-
-        # 🔹 Prepare Data for LSTM
-        scaler = MinMaxScaler()
-        sensor_data = np.array(rows)  # Shape: (10, 5)
-
-        # Fit and transform sensor data
-        sensor_data = scaler.fit_transform(sensor_data)
-
-        # Reshape to LSTM format (batch_size=1, time_steps=10, features=5)
-        sensor_data = np.expand_dims(sensor_data, axis=0)  # Shape: (1, 10, 5)
-
-        # 🔹 Make prediction
-        predicted_temp = lstm_model_2.predict(sensor_data)  # Shape: (1, 1)
-        predicted_temp = scaler.inverse_transform(np.array([[predicted_temp[0][0], 0, 0, 0, 0]]))[:, 0][0]
-
-        return jsonify({"predicted_temperature": float(predicted_temp)})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+def predict_temp_2():
+    return predict_temperature("sensor_data2", lstm_model_2)
 
 def predict_rain(table_name, model):
     try:
