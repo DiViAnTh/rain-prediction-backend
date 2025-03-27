@@ -26,7 +26,7 @@ lstm_model_1 = load_model("lstm_model_1.h5", custom_objects={'mse': MeanSquaredE
 iso_forest_model_1 = joblib.load("isolation_forest.pkl")
 
 # ✅ Load models for Node 2
-lstm_model_2 = load_model("lstm_model_2.h5")
+lstm_model_2 = load_model("lstm_model_2.h5", custom_objects={'mse': MeanSquaredError()})
 iso_forest_model_2 = joblib.load("isolation_forest2.pkl")
 
 # ✅ Load Rain Prediction Model
