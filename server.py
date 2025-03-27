@@ -78,7 +78,7 @@ def predict_temperature2():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # 🔹 Fetch last 10 temperature readings from Node 2
+        # 🔹 Fetch last 10 temperature readings
         cur.execute("SELECT temperature FROM sensor_data2 ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
         cur.close()
@@ -87,14 +87,20 @@ def predict_temperature2():
         if len(rows) < 10:
             return jsonify({"error": "Not enough data for prediction"}), 400
 
-        # 🔹 Prepare data for LSTM
+        # 🔹 Convert to NumPy array (ensure correct shape)
+        temperature_data = np.array([row[0] for row in rows], dtype=np.float32).reshape(-1, 1)
+
+        # 🔹 Scale the data
         scaler = MinMaxScaler()
-        temperature_data = np.array(rows).reshape(-1, 1)
         temperature_data = scaler.fit_transform(temperature_data)
-        temperature_data = np.expand_dims(temperature_data, axis=0)  # Reshape for LSTM input
+
+        # 🔹 Reshape to match LSTM input (1, 10, 1)
+        temperature_data = np.reshape(temperature_data, (1, 10, 1))
 
         # 🔹 Make prediction
         predicted_temp = lstm_model_2.predict(temperature_data)
+
+        # 🔹 Inverse transform the prediction
         predicted_temp = scaler.inverse_transform(predicted_temp.reshape(-1, 1))[0][0]
 
         return jsonify({"predicted_temperature": predicted_temp})
