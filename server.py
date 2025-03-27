@@ -23,10 +23,12 @@ def get_db_connection():
 
 # ✅ Load models for Node 1
 lstm_model_1 = load_model("lstm_model_1.h5", custom_objects={'mse': MeanSquaredError()})
+lstm_model_1.build(input_shape=(1, 10, 1))
 iso_forest_model_1 = joblib.load("isolation_forest.pkl")
 
 # ✅ Load models for Node 2
 lstm_model_2 = load_model("lstm_model_2.h5", custom_objects={'mse': MeanSquaredError()})
+lstm_model_2.build(input_shape=(1, 10, 1))
 iso_forest_model_2 = joblib.load("isolation_forest2.pkl")
 
 # ✅ Load Rain Prediction Model
@@ -64,7 +66,7 @@ def predict_temperature():
         temperature_data = np.expand_dims(temperature_data, axis=0)  # Reshape for LSTM input
 
         # 🔹 Make prediction
-        predicted_temp = lstm_model.predict(temperature_data)
+        predicted_temp = lstm_model_1.predict(temperature_data)
         predicted_temp = scaler.inverse_transform(predicted_temp.reshape(-1, 1))[0][0]
 
         return jsonify({"predicted_temperature": predicted_temp})
