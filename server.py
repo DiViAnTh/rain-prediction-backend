@@ -21,20 +21,17 @@ DATABASE_URL = "postgresql://rain_db_5lru_jn0r_user:2snapd3uhL2qpKAkc1FKKXZwV6Gk
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, sslmode="require")
 
-# Load the model
-lstm_model_1 = load_model("models/lstm_model_1.h5", custom_objects={'mse': MeanSquaredError()})
-
 # ✅ Load models for Node 1
-lstm_model_1 = load_model("models/lstm_model_1.h5", custom_objects={'mse': MeanSquaredError()})
-iso_forest_model_1 = joblib.load("models/isolation_forest.pkl")
+lstm_model_1 = load_model("lstm_model_1.h5", custom_objects={'mse': MeanSquaredError()})
+iso_forest_model_1 = joblib.load("isolation_forest.pkl")
 
 # ✅ Load models for Node 2
-lstm_model_2 = load_model("models/lstm_model_2.h5")
-iso_forest_model_2 = joblib.load("models/isolation_forest2.pkl")
+lstm_model_2 = load_model("lstm_model_2.h5")
+iso_forest_model_2 = joblib.load("isolation_forest2.pkl")
 
 # ✅ Load Rain Prediction Model
-rain_model = joblib.load("models/rain_prediction.pkl")
-rain_model2 = joblib.load("models/rain_prediction2.pkl")
+rain_model = joblib.load("rain_prediction.pkl")
+rain_model2 = joblib.load("rain_prediction2.pkl")
 
 # ✅ Function to Predict Anomaly using Isolation Forest (Node 1)
 def predict_anomaly_node1(features):
