@@ -230,7 +230,7 @@ def upload():
         timestamp = datetime.now()
 
         # 🔍 Detect anomaly using Isolation Forest for Node 1
-        anomaly = predict_anomaly_node1([temperature, humidity, ax, ay, az])
+        anomaly = bool(predict_anomaly_node1([temperature, humidity, ax, ay, az]))  # Convert numpy.bool_ to Python bool
 
         # 🌧 Predict rain using the rain model
         rain_prediction = predict_rain("sensor_data", rain_model)
@@ -262,7 +262,7 @@ def upload2():
         timestamp = datetime.now()
 
         # 🔍 Detect anomaly using Isolation Forest for Node 2
-        anomaly = predict_anomaly_node2([temperature, humidity, ax, ay, az])
+        anomaly = bool(predict_anomaly_node2([temperature, humidity, ax, ay, az]))  # Convert numpy.bool_ to Python bool
 
         # 🌧 Predict rain using the rain model for Node 2
         rain_prediction = predict_rain("sensor_data2", rain_model2)
