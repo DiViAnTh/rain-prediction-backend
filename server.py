@@ -154,29 +154,20 @@ def get_last_7_days(table_name):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-
-        query = sql.SQL("""
-            SELECT DATE(timestamp) AS date, COUNT(*) AS total_entries,
-                   ROUND(AVG(temperature)::numeric, 2) AS avg_temperature,
-                   ROUND(AVG(humidity)::numeric, 2) AS avg_humidity
-            FROM {}
-            WHERE timestamp >= NOW() - INTERVAL '7 days'
+        cur.execute(f"""
+            SELECT DATE(timestamp), ROUND(AVG(temperature)::numeric, 2), MAX(temperature), MIN(temperature),
+                   ROUND(AVG(humidity)::numeric, 2), MAX(humidity), MIN(humidity)
+            FROM {table_name}
             GROUP BY DATE(timestamp)
-            ORDER BY DATE(timestamp) DESC;
-        """).format(sql.Identifier(table_name))
-
-        cur.execute(query)
+            ORDER BY DATE(timestamp) DESC
+            LIMIT 7;
+        """)
         rows = cur.fetchall()
         cur.close()
         conn.close()
-
-        # Convert rows into JSON format
-        result = [{"date": str(row[0]), "count": row[1], "avg_temp": row[2], "avg_humidity": row[3]} for row in rows]
-
-        return jsonify({"last_7_days": result})
-
+        return jsonify({"last_7_days": rows})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)})
 
 @app.route("/latest_data", methods=["GET"])
 def latest_data():
