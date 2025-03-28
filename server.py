@@ -234,13 +234,16 @@ def upload():
 
         # 🌧 Predict rain using the rain model
         rain_prediction = predict_rain("sensor_data", rain_model)
+        rain_bool = True if rain_prediction == "Rain Expected" else False
+
 
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_expected)
+            INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp, anomaly, rain)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_prediction))
+        """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_bool))
+
         
         conn.commit()
         cur.close()
@@ -266,13 +269,16 @@ def upload2():
 
         # 🌧 Predict rain using the rain model for Node 2
         rain_prediction = predict_rain("sensor_data2", rain_model2)
+        rain_bool = True if rain_prediction == "Rain Expected" else False
+
 
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensor_data2 (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_expected)
+            INSERT INTO sensor_data2 (temperature, humidity, ax, ay, az, timestamp, anomaly, rain)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_prediction))
+        """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_bool))
+
         
         conn.commit()
         cur.close()
