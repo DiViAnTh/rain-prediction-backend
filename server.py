@@ -240,7 +240,7 @@ def upload():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp, anomaly, rain)
+            INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_expected)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_bool))
 
@@ -275,7 +275,7 @@ def upload2():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensor_data2 (temperature, humidity, ax, ay, az, timestamp, anomaly, rain)
+            INSERT INTO sensor_data2 (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_expected)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_bool))
 
