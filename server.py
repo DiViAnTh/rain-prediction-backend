@@ -218,7 +218,6 @@ def home():
             "/last_7_days2": "GET analytics for the last 7 days (Node 2)"
         }
     })
-
 @app.route("/upload", methods=["POST"])
 def upload():
     try:
@@ -230,22 +229,26 @@ def upload():
         az = data.get("az")
         timestamp = datetime.now()
 
-        # 🔍 Detect anomaly using Isolation Forest
+        # 🔍 Detect anomaly using Isolation Forest for Node 1
         anomaly = predict_anomaly_node1([temperature, humidity, ax, ay, az])
+
+        # 🌧 Predict rain using the rain model
+        rain_prediction = predict_rain("sensor_data", rain_model)
 
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp, anomaly)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (temperature, humidity, ax, ay, az, timestamp, anomaly))
+            INSERT INTO sensor_data (temperature, humidity, ax, ay, az, timestamp, anomaly, rain)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_prediction))
         
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"status": "✅ Node 1 data saved successfully", "anomaly_detected": anomaly}), 201
+        return jsonify({"status": "✅ Node 1 data saved successfully", "anomaly_detected": anomaly, "rain_prediction": rain_prediction}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/upload2", methods=["POST"])
 def upload2():
@@ -261,17 +264,20 @@ def upload2():
         # 🔍 Detect anomaly using Isolation Forest for Node 2
         anomaly = predict_anomaly_node2([temperature, humidity, ax, ay, az])
 
+        # 🌧 Predict rain using the rain model for Node 2
+        rain_prediction = predict_rain("sensor_data2", rain_model2)
+
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO sensor_data2 (temperature, humidity, ax, ay, az, timestamp, anomaly)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (temperature, humidity, ax, ay, az, timestamp, anomaly))
+            INSERT INTO sensor_data2 (temperature, humidity, ax, ay, az, timestamp, anomaly, rain)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (temperature, humidity, ax, ay, az, timestamp, anomaly, rain_prediction))
         
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"status": "✅ Node 2 data saved successfully", "anomaly_detected": anomaly}), 201
+        return jsonify({"status": "✅ Node 2 data saved successfully", "anomaly_detected": anomaly, "rain_prediction": rain_prediction}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
